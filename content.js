@@ -1,3 +1,12 @@
+function getBrightness(color) {
+  if (!color || color === 'transparent') return 'light';
+  const rgb = color.match(/\d+/g);
+  if (!rgb) return 'light';
+  // Formula to determine perceived brightness
+  const yiq = ((parseInt(rgb[0]) * 299) + (parseInt(rgb[1]) * 587) + (parseInt(rgb[2]) * 114)) / 1000;
+  return (yiq >= 128) ? 'light' : 'dark';
+}
+
 function getHtmlOfSelection() {
   const selection = window.getSelection();
   if (selection.rangeCount > 0) {
@@ -71,21 +80,29 @@ function highlightHtml(id, html, text, contextBefore, contextAfter) {
         range.setStart(startNodeInfo.node, startNodeInfo.offset);
         range.setEnd(endNodeInfo.node, endNodeInfo.offset);
 
-        // Check if this content is already highlighted by checking for a parent highlight span
         let parent = range.commonAncestorContainer;
         if (parent.nodeType !== Node.ELEMENT_NODE) {
             parent = parent.parentElement;
         }
         if (parent.closest('.glowmarkr-highlight')) {
             startIndex = index + 1;
-            continue; // Already highlighted, skip to next match
+            continue; 
         }
+
+        const computedStyle = window.getComputedStyle(parent);
+        const backgroundColor = computedStyle.backgroundColor;
+        const brightness = getBrightness(backgroundColor);
 
         const span = document.createElement("span");
         span.style.backgroundColor = "yellow";
         span.className = "glowmarkr-highlight";
         span.dataset.glowmarkrId = id;
         span.innerHTML = html;
+
+        if (brightness === 'dark') {
+            span.style.color = "black";
+        }
+
         range.deleteContents();
         range.insertNode(span);
 
@@ -110,15 +127,6 @@ function runHighlighting() {
     }
   });
 }
-
-window.addEventListener('load', () => {
-  console.log("GlowMarkr: Page loaded. Scheduling highlight check.");
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(runHighlighting);
-  } else {
-    setTimeout(runHighlighting, 100);
-  }
-});
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("GlowMarkr: Received message from background script:", request);
@@ -179,10 +187,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           const highlights = result[url] || [];
           highlights.push(newHighlight);
           chrome.storage.local.set({ [url]: highlights }, () => {
+            let parentElement = range.commonAncestorContainer;
+            if (parentElement.nodeType !== Node.ELEMENT_NODE) {
+                parentElement = parentElement.parentElement;
+            }
+            const computedStyle = window.getComputedStyle(parentElement);
+            const backgroundColor = computedStyle.backgroundColor;
+            const brightness = getBrightness(backgroundColor);
+
             const span = document.createElement("span");
             span.style.backgroundColor = "yellow";
             span.className = "glowmarkr-highlight";
             span.dataset.glowmarkrId = highlightId;
+
+            if (brightness === 'dark') {
+                span.style.color = "black";
+            }
+
             span.appendChild(range.extractContents());
             range.insertNode(span);
             console.log("GlowMarkr: Highlight added.");
@@ -193,3 +214,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   return true;
 });
+
+let debounceTimer;
+function debouncedRunHighlighting() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    runHighlighting();
+  }, 500);
+}
+
+const observer = new MutationObserver(() => {
+    debouncedRunHighlighting();
+});
+
+if (document.body) {
+    observer.observe(document.body, { childList: true, subtree: true });
+    debouncedRunHighlighting(); // Initial run
+} else {
+    document.addEventListener('DOMContentLoaded', () => {
+        observer.observe(document.body, { childList: true, subtree: true });
+        debouncedRunHighlighting(); // Initial run
+    });
+}

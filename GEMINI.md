@@ -11,7 +11,7 @@ The extension is built with plain JavaScript and utilizes Chrome's extension API
     1.  It listens for a message from `background.js` which is triggered by the "GlowMarkr" context menu. The script then determines if the user's selection is already highlighted.
         *   **If the selection is not highlighted (Mark):** It captures the selected text's HTML, plain text, and the surrounding context. This data is stored in `chrome.storage.local` with a unique ID. The script then wraps the selection in a `<span>` with a custom class and a data attribute for the ID to apply the highlight.
         *   **If the selection is already highlighted (Unmark):** It removes the highlight from the page and deletes the corresponding highlight data from `chrome.storage.local` using the unique ID.
-    2.  When a page is loaded, it checks `chrome.storage.local` for any saved highlights for the current URL. For each highlight, it uses the stored text and context to accurately locate and re-apply the highlight. This method is robust and can handle highlights that span across multiple HTML elements with complex formatting.
+    2.  It uses a `MutationObserver` to monitor the page for content changes. When changes are detected (e.g., on initial load or when a dynamic web application updates its view), it checks `chrome.storage.local` for any saved highlights for the current URL. For each highlight, it uses the stored text and context to accurately locate and re-apply the highlight. This makes the extension compatible with both static pages and modern, dynamic web applications.
 
 ## Building and Running
 
@@ -32,4 +32,4 @@ The extension should now be installed and active.
 
 ## Performance Considerations
 
-The process of searching for and re-applying highlights can be resource-intensive, especially on very long pages. To ensure a smooth user experience, the re-highlighting process is deferred using `requestIdleCallback`. This means the highlighting only happens when the browser is idle, preventing any impact on page load times or responsiveness.
+The process of searching for and re-applying highlights can be resource-intensive. To handle dynamic content from modern web frameworks and to avoid performance issues, the extension uses a `MutationObserver` to trigger re-highlighting when the page DOM changes. This process is "debounced," meaning the highlighting function waits for a brief quiet period before running. This ensures a responsive user experience by preventing the script from running excessively on pages with frequent, minor DOM updates.
