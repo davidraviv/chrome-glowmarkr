@@ -5,8 +5,7 @@
   "description": "Persistent Text Highlighter",
   "permissions": [
     "storage",
-    "contextMenus",
-    "scripting"
+    "contextMenus"
   ],
   "background": {
     "service_worker": "background.js"
