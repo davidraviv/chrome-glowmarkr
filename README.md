@@ -10,13 +10,23 @@ Ever wish you could highlight stuff on websites and have it *actually* stay ther
 
 GlowMarkr lets you highlight text on any webpage, and it magically remembers your highlights next time you visit. No more losing your spot or taking a million screenshots. It's like having digital sticky notes that never fall off. 📌
 
-## 🚀 How to get started
+## 🚀 How to use it
 
-1.  **Highlight it:** Just select any text on a webpage like you normally would.
+**To add a highlight:**
+
+1.  **Select text:** Just drag your mouse over anything you want to remember.
 2.  **Right-click:** A menu will pop up.
-3.  **Click "GlowMarkr":** And boom! Your text is highlighted. 💥
+3.  **Click "GlowMarkr":** And boom! Your text is highlighted in a sunny yellow. 💥
 
-That's it. Seriously.
+**To remove a highlight:**
+
+Changed your mind? No problem!
+
+1.  **Select the highlight:** Drag your mouse over the highlighted text.
+2.  **Right-click:** Open that same menu.
+3.  **Click "GlowMarkr" again:** The highlight will disappear. ✨
+
+It's a simple toggle—click to glow, click again to let go!
 
 ## 🧠 It just *knows*
 

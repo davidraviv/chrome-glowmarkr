@@ -24,14 +24,14 @@ function getContext(range) {
   return { contextBefore, contextAfter };
 }
 
-function highlightHtml(html, text, contextBefore, contextAfter) {
+function highlightHtml(id, html, text, contextBefore, contextAfter) {
   console.log("GlowMarkr: Attempting to highlight:", text);
 
   const treeWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   const textNodes = [];
   let currentNode;
   while (currentNode = treeWalker.nextNode()) {
-    if (currentNode.parentElement.tagName !== 'SCRIPT' && currentNode.parentElement.tagName !== 'STYLE') {
+    if (currentNode.parentElement.tagName !== 'SCRIPT' && currentNode.parentElement.tagName !== 'STYLE' && currentNode.parentElement.tagName !== 'HEAD' && currentNode.parentElement.tagName !== 'TITLE' && currentNode.parentElement.tagName !== 'META') {
         textNodes.push(currentNode);
     }
   }
@@ -71,8 +71,20 @@ function highlightHtml(html, text, contextBefore, contextAfter) {
         range.setStart(startNodeInfo.node, startNodeInfo.offset);
         range.setEnd(endNodeInfo.node, endNodeInfo.offset);
 
+        // Check if this content is already highlighted by checking for a parent highlight span
+        let parent = range.commonAncestorContainer;
+        if (parent.nodeType !== Node.ELEMENT_NODE) {
+            parent = parent.parentElement;
+        }
+        if (parent.closest('.glowmarkr-highlight')) {
+            startIndex = index + 1;
+            continue; // Already highlighted, skip to next match
+        }
+
         const span = document.createElement("span");
         span.style.backgroundColor = "yellow";
+        span.className = "glowmarkr-highlight";
+        span.dataset.glowmarkrId = id;
         span.innerHTML = html;
         range.deleteContents();
         range.insertNode(span);
@@ -94,7 +106,7 @@ function runHighlighting() {
     const highlights = result[url] || [];
     console.log(`GlowMarkr: Found ${highlights.length} highlights for this page.`);
     for (const highlight of highlights) {
-      highlightHtml(highlight.html, highlight.text, highlight.contextBefore, highlight.contextAfter);
+      highlightHtml(highlight.id, highlight.html, highlight.text, highlight.contextBefore, highlight.contextAfter);
     }
   });
 }
@@ -117,11 +129,46 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       const selectedHtml = getHtmlOfSelection();
       const selectedText = selection.toString();
 
-      if (selectedHtml && selectedText) {
-        const { contextBefore, contextAfter } = getContext(range);
+      let container = range.commonAncestorContainer;
+      if (container.nodeType !== Node.ELEMENT_NODE) {
+        container = container.parentElement;
+      }
+      const highlightSpan = container.closest('.glowmarkr-highlight');
+
+      if (highlightSpan) {
+        // This is an unmark action
+        const highlightId = highlightSpan.dataset.glowmarkrId;
         const url = window.location.href;
 
+        chrome.storage.local.get([url], (result) => {
+          let highlights = result[url] || [];
+          highlights = highlights.filter(h => h.id !== highlightId);
+
+          if (highlights.length === 0) {
+            chrome.storage.local.remove(url, () => {
+              const parent = highlightSpan.parentNode;
+              parent.replaceChild(document.createRange().createContextualFragment(highlightSpan.innerHTML), highlightSpan);
+              parent.normalize();
+              console.log("GlowMarkr: Last highlight removed, cleaning up storage for this URL.");
+            });
+          } else {
+            chrome.storage.local.set({ [url]: highlights }, () => {
+              const parent = highlightSpan.parentNode;
+              parent.replaceChild(document.createRange().createContextualFragment(highlightSpan.innerHTML), highlightSpan);
+              parent.normalize();
+              console.log("GlowMarkr: Highlight removed.");
+            });
+          }
+        });
+
+      } else if (selectedHtml && selectedText) {
+        // This is a mark action
+        const { contextBefore, contextAfter } = getContext(range);
+        const url = window.location.href;
+        const highlightId = Date.now().toString();
+
         const newHighlight = {
+          id: highlightId,
           html: selectedHtml,
           text: selectedText,
           contextBefore,
@@ -134,8 +181,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           chrome.storage.local.set({ [url]: highlights }, () => {
             const span = document.createElement("span");
             span.style.backgroundColor = "yellow";
+            span.className = "glowmarkr-highlight";
+            span.dataset.glowmarkrId = highlightId;
             span.appendChild(range.extractContents());
             range.insertNode(span);
+            console.log("GlowMarkr: Highlight added.");
           });
         });
       }

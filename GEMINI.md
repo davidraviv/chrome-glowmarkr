@@ -6,9 +6,11 @@ This project is a Chrome extension called **GlowMarkr**. It allows users to high
 
 The extension is built with plain JavaScript and utilizes Chrome's extension APIs. The core functionality is split between two main scripts:
 
-*   `background.js`: This script runs in the background and creates the "GlowMarkr" context menu item. When the user clicks this item, it sends a message to the content script of the active tab to initiate the highlighting process.
+*   `background.js`: This script runs in the background and creates the "GlowMarkr" context menu item. When the user clicks this item, it sends a message to the content script of the active tab.
 *   `content.js`: This script is injected into every webpage the user visits. It has two primary responsibilities:
-    1.  When it receives a message from `background.js`, it captures the selected text's HTML, plain text, and the surrounding context (five words before and after). This data is stored in `chrome.storage.local` to ensure the highlight can be reliably found later. The script then wraps the selection in a `<span>` to apply the highlight.
+    1.  It listens for a message from `background.js` which is triggered by the "GlowMarkr" context menu. The script then determines if the user's selection is already highlighted.
+        *   **If the selection is not highlighted (Mark):** It captures the selected text's HTML, plain text, and the surrounding context. This data is stored in `chrome.storage.local` with a unique ID. The script then wraps the selection in a `<span>` with a custom class and a data attribute for the ID to apply the highlight.
+        *   **If the selection is already highlighted (Unmark):** It removes the highlight from the page and deletes the corresponding highlight data from `chrome.storage.local` using the unique ID.
     2.  When a page is loaded, it checks `chrome.storage.local` for any saved highlights for the current URL. For each highlight, it uses the stored text and context to accurately locate and re-apply the highlight. This method is robust and can handle highlights that span across multiple HTML elements with complex formatting.
 
 ## Building and Running
