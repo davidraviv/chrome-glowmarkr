@@ -43,3 +43,10 @@ The next time you open that page, GlowMarkr will automatically re-apply your hig
 *   **It's free!**
 
 Happy highlighting! Highlighter fam! 🎉
+
+## ⚠️ A Quick Heads-Up
+
+GlowMarkr works best on pages with static content, like articles, blog posts, and documentation.
+
+However, it may not work as expected on highly dynamic websites where the content changes frequently or is loaded on the fly. For example, on websites like **Facebook** or **Gmail**, you might find that your highlights don't reappear consistently.
+
