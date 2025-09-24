@@ -227,6 +227,16 @@ function unmarkSelection() {
   }
 }
 
+document.addEventListener('contextmenu', (event) => {
+  const target = event.target;
+  const isHighlighted = target.matches('.glowmarkr-highlight') || target.closest('.glowmarkr-highlight');
+
+  chrome.runtime.sendMessage({
+    type: 'updateContextMenu',
+    isHighlighted: !!isHighlighted
+  });
+}, true);
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("GlowMarkr: Received message from background script:", request);
   if (request.action === "mark") {

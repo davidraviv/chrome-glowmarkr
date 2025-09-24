@@ -1,43 +1,51 @@
 const COLORS = {
-  yellow: "Yellow",
-  green: "Green",
-  pink: "Pink",
-  cyan: "Cyan",
+  yellow: "🟡 Yellow",
+  green: "🟢 Green",
+  pink: "🌸 Pink",
+  cyan: "🔵 Cyan",
 };
 
-chrome.runtime.onInstalled.addListener(() => {
-  // Parent menu item
-  chrome.contextMenus.create({
-    id: "glow-markr-parent",
-    title: "GlowMarkr",
-    contexts: ["selection"],
-  });
+const MENU_ITEMS = {
+  ...Object.fromEntries(
+    Object.entries(COLORS).map(([key]) => [`mark-${key}`, { visible: true }])
+  ),
+  unmark: { visible: false },
+};
 
-  // Color options
-  for (const [key, value] of Object.entries(COLORS)) {
+function createOrUpdateMenus() {
+  chrome.contextMenus.removeAll(() => {
+    for (const [key, value] of Object.entries(COLORS)) {
+      const id = `mark-${key}`;
+      chrome.contextMenus.create({
+        id: id,
+        title: value,
+        contexts: ["selection"],
+        visible: MENU_ITEMS[id].visible,
+      });
+    }
+
     chrome.contextMenus.create({
-      id: `mark-${key}`,
-      parentId: "glow-markr-parent",
-      title: value,
+      id: "unmark",
+      title: "Unmark",
       contexts: ["selection"],
+      visible: MENU_ITEMS.unmark.visible,
     });
+  });
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  createOrUpdateMenus();
+});
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "updateContextMenu") {
+    const isHighlighted = message.isHighlighted;
+    for (const key in COLORS) {
+      MENU_ITEMS[`mark-${key}`].visible = !isHighlighted;
+    }
+    MENU_ITEMS.unmark.visible = isHighlighted;
+    createOrUpdateMenus();
   }
-
-  // Separator
-  chrome.contextMenus.create({
-    id: "separator",
-    parentId: "glow-markr-parent",
-    type: "separator",
-    contexts: ["selection"],
-  });
-
-  // Unmark option
-  chrome.contextMenus.create({
-    id: "unmark",
-    parentId: "glow-markr-parent",
-    title: "Unmark",
-    contexts: ["selection"],
-  });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {

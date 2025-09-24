@@ -16,17 +16,15 @@ GlowMarkr lets you highlight text on any webpage, and it magically remembers you
 
 1.  **Select text:** Just drag your mouse over anything you want to remember.
 2.  **Right-click:** A menu will pop up.
-3.  **Click "GlowMarkr":** And boom! Your text is highlighted in a sunny yellow. 💥
+3.  **Choose your color:** Select one of the color options (e.g., "🟡 Yellow", "🟢 Green", "🌸 Pink", "🔵 Cyan"). Your text is highlighted in the chosen color! 💥
 
 **To remove a highlight:**
 
 Changed your mind? No problem!
 
-1.  **Select the highlight:** Drag your mouse over the highlighted text.
+1.  **Select the highlight:** Drag your mouse over the highlighted text you wish to remove.
 2.  **Right-click:** Open that same menu.
-3.  **Click "GlowMarkr" again:** The highlight will disappear. ✨
-
-It's a simple toggle—click to glow, click again to let go!
+3.  **Click "Unmark":** The highlight will disappear. ✨
 
 ## 🧠 It just *knows*
 
