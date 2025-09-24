@@ -48,6 +48,22 @@ function getContext(range) {
   return { contextBefore, contextAfter };
 }
 
+function createHighlightSpan(id, color, parentElement) {
+  const computedStyle = window.getComputedStyle(parentElement);
+  const backgroundColor = computedStyle.backgroundColor;
+  const brightness = getBrightness(backgroundColor);
+
+  const span = document.createElement("span");
+  span.className = `glowmarkr-highlight glowmarkr-${color}`;
+  span.dataset.glowmarkrId = id;
+
+  if (brightness === 'dark') {
+    span.style.color = "black";
+  }
+
+  return span;
+}
+
 function highlightHtml(id, html, text, contextBefore, contextAfter, color = 'yellow') {
   console.log("GlowMarkr: Attempting to highlight:", text);
 
@@ -104,18 +120,8 @@ function highlightHtml(id, html, text, contextBefore, contextAfter, color = 'yel
             continue; 
         }
 
-        const computedStyle = window.getComputedStyle(parent);
-        const backgroundColor = computedStyle.backgroundColor;
-        const brightness = getBrightness(backgroundColor);
-
-        const span = document.createElement("span");
-        span.className = `glowmarkr-highlight glowmarkr-${color}`;
-        span.dataset.glowmarkrId = id;
+        const span = createHighlightSpan(id, color, parent);
         span.innerHTML = html;
-
-        if (brightness === 'dark') {
-            span.style.color = "black";
-        }
 
         range.deleteContents();
         range.insertNode(span);
@@ -171,17 +177,8 @@ function markSelection(color) {
           if (parentElement.nodeType !== Node.ELEMENT_NODE) {
               parentElement = parentElement.parentElement;
           }
-          const computedStyle = window.getComputedStyle(parentElement);
-          const backgroundColor = computedStyle.backgroundColor;
-          const brightness = getBrightness(backgroundColor);
-
-          const span = document.createElement("span");
-          span.className = `glowmarkr-highlight glowmarkr-${color}`;
-          span.dataset.glowmarkrId = highlightId;
-
-          if (brightness === 'dark') {
-              span.style.color = "black";
-          }
+          
+          const span = createHighlightSpan(highlightId, color, parentElement);
 
           span.appendChild(range.extractContents());
           range.insertNode(span);
