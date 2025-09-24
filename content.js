@@ -64,6 +64,30 @@ function createHighlightSpan(id, color, parentElement) {
   return span;
 }
 
+function findSelectionNodes(textNodes, text, startIndex) {
+  let runningLength = 0;
+  let startNodeInfo, endNodeInfo;
+
+  for (let i = 0; i < textNodes.length; i++) {
+    const node = textNodes[i];
+    const nodeLength = node.nodeValue.length;
+    const nodeStart = runningLength;
+    const nodeEnd = runningLength + nodeLength;
+
+    if (!startNodeInfo && startIndex >= nodeStart && startIndex < nodeEnd) {
+      startNodeInfo = { node: node, offset: startIndex - nodeStart };
+    }
+
+    if (!endNodeInfo && (startIndex + text.length - 1) >= nodeStart && (startIndex + text.length - 1) < nodeEnd) {
+      endNodeInfo = { node: node, offset: (startIndex + text.length) - nodeStart };
+    }
+
+    runningLength += nodeLength;
+    if (startNodeInfo && endNodeInfo) break;
+  }
+  return { startNodeInfo, endNodeInfo };
+}
+
 function highlightHtml(id, html, text, contextBefore, contextAfter, color = 'yellow') {
   console.log("GlowMarkr: Attempting to highlight:", text);
 
@@ -72,7 +96,7 @@ function highlightHtml(id, html, text, contextBefore, contextAfter, color = 'yel
   let currentNode;
   while (currentNode = treeWalker.nextNode()) {
     if (currentNode.parentElement.tagName !== 'SCRIPT' && currentNode.parentElement.tagName !== 'STYLE' && currentNode.parentElement.tagName !== 'HEAD' && currentNode.parentElement.tagName !== 'TITLE' && currentNode.parentElement.tagName !== 'META') {
-        textNodes.push(currentNode);
+      textNodes.push(currentNode);
     }
   }
 
@@ -85,26 +109,7 @@ function highlightHtml(id, html, text, contextBefore, contextAfter, color = 'yel
     const textAfter = fullText.substring(index + text.length).trim().split(/\s+/).slice(0, 5).join(' ');
 
     if (textBefore.endsWith(contextBefore) && textAfter.startsWith(contextAfter)) {
-      let runningLength = 0;
-      let startNodeInfo, endNodeInfo;
-
-      for (let i = 0; i < textNodes.length; i++) {
-          const node = textNodes[i];
-          const nodeLength = node.nodeValue.length;
-          const nodeStart = runningLength;
-          const nodeEnd = runningLength + nodeLength;
-
-          if (!startNodeInfo && index >= nodeStart && index < nodeEnd) {
-              startNodeInfo = { node: node, offset: index - nodeStart };
-          }
-
-          if (!endNodeInfo && (index + text.length -1) >= nodeStart && (index + text.length -1) < nodeEnd) {
-              endNodeInfo = { node: node, offset: (index + text.length) - nodeStart };
-          }
-          
-          runningLength += nodeLength;
-          if(startNodeInfo && endNodeInfo) break;
-      }
+      const { startNodeInfo, endNodeInfo } = findSelectionNodes(textNodes, text, index);
 
       if (startNodeInfo && endNodeInfo) {
         const range = document.createRange();
@@ -113,11 +118,11 @@ function highlightHtml(id, html, text, contextBefore, contextAfter, color = 'yel
 
         let parent = range.commonAncestorContainer;
         if (parent.nodeType !== Node.ELEMENT_NODE) {
-            parent = parent.parentElement;
+          parent = parent.parentElement;
         }
         if (parent.closest('.glowmarkr-highlight')) {
-            startIndex = index + 1;
-            continue; 
+          startIndex = index + 1;
+          continue;
         }
 
         const span = createHighlightSpan(id, color, parent);
@@ -127,10 +132,10 @@ function highlightHtml(id, html, text, contextBefore, contextAfter, color = 'yel
         range.insertNode(span);
 
         console.log("GlowMarkr: Match found and highlight applied!");
-        return; 
+        return;
       }
     }
-    startIndex = index + 1; 
+    startIndex = index + 1;
   }
 
   console.log("GlowMarkr: No matches found for the highlight.");
@@ -175,9 +180,9 @@ function markSelection(color) {
         chrome.storage.local.set({ [url]: highlights }, () => {
           let parentElement = range.commonAncestorContainer;
           if (parentElement.nodeType !== Node.ELEMENT_NODE) {
-              parentElement = parentElement.parentElement;
+            parentElement = parentElement.parentElement;
           }
-          
+
           const span = createHighlightSpan(highlightId, color, parentElement);
 
           span.appendChild(range.extractContents());
@@ -252,15 +257,16 @@ function debouncedRunHighlighting() {
 }
 
 const observer = new MutationObserver(() => {
-    debouncedRunHighlighting();
+  debouncedRunHighlighting();
 });
 
-if (document.body) {
-    observer.observe(document.body, { childList: true, subtree: true });
-    debouncedRunHighlighting(); // Initial run
+function startObserver() {
+  observer.observe(document.body, { childList: true, subtree: true });
+  debouncedRunHighlighting(); // Initial run
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startObserver);
 } else {
-    document.addEventListener('DOMContentLoaded', () => {
-        observer.observe(document.body, { childList: true, subtree: true });
-        debouncedRunHighlighting(); // Initial run
-    });
+  startObserver();
 }
