@@ -42,11 +42,16 @@ The next time you open that page, GlowMarkr will automatically re-apply your hig
 *   **It's persistent:** Your highlights are saved automatically and are there when you come back.
 *   **It's free!**
 
-Happy highlighting! Highlighter fam! 🎉
-
 ## ⚠️ A Quick Heads-Up
 
 GlowMarkr works best on pages with static content, like articles, blog posts, and documentation.
 
-However, it may not work as expected on highly dynamic websites where the content changes frequently or is loaded on the fly. For example, on websites like **Facebook** or **Gmail**, you might find that your highlights don't reappear consistently.
+However, it may not work as expected on highly dynamic websites where the content changes frequently or is loaded on the fly. For example, on websites like **Facebook**, **Gmail**, or **Reddit**, you might find that your highlights don't reappear consistently.
 
+## ⭐ Your Feedback Matters! ⭐
+
+If you find GlowMarkr useful, please consider giving it a 5-star rating on the [Chrome Web Store](https://chromewebstore.google.com/detail/glowmarkr/nklngngbaglejehlcaffjgheakcalhil)! Your support helps us grow and improve.
+
+Encounter a bug? Before leaving a low rating, please [open an issue](https://github.com/davidraviv/chrome-glowmarkr/issues/new/choose) on our GitHub page. We're committed to making GlowMarkr better, and your feedback is crucial for that.
+
+Happy highlighting! Highlighter fam! 🎉
