@@ -1,3 +1,18 @@
+// Add styles for the highlights
+const style = document.createElement('style');
+style.textContent = `
+  .glowmarkr-highlight {
+    padding: 2px 0;
+    border-radius: 3px;
+  }
+  .glowmarkr-yellow { background-color: #fffb87; }
+  .glowmarkr-green { background-color: #a1ffb3; }
+  .glowmarkr-pink { background-color: #ffb3f5; }
+  .glowmarkr-cyan { background-color: #abfffb; }
+`;
+document.head.appendChild(style);
+
+
 function getBrightness(color) {
   if (!color || color === 'transparent') return 'light';
   const rgb = color.match(/\d+/g);
@@ -33,7 +48,7 @@ function getContext(range) {
   return { contextBefore, contextAfter };
 }
 
-function highlightHtml(id, html, text, contextBefore, contextAfter) {
+function highlightHtml(id, html, text, contextBefore, contextAfter, color = 'yellow') {
   console.log("GlowMarkr: Attempting to highlight:", text);
 
   const treeWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -94,8 +109,7 @@ function highlightHtml(id, html, text, contextBefore, contextAfter) {
         const brightness = getBrightness(backgroundColor);
 
         const span = document.createElement("span");
-        span.style.backgroundColor = "yellow";
-        span.className = "glowmarkr-highlight";
+        span.className = `glowmarkr-highlight glowmarkr-${color}`;
         span.dataset.glowmarkrId = id;
         span.innerHTML = html;
 
@@ -123,96 +137,103 @@ function runHighlighting() {
     const highlights = result[url] || [];
     console.log(`GlowMarkr: Found ${highlights.length} highlights for this page.`);
     for (const highlight of highlights) {
-      highlightHtml(highlight.id, highlight.html, highlight.text, highlight.contextBefore, highlight.contextAfter);
+      highlightHtml(highlight.id, highlight.html, highlight.text, highlight.contextBefore, highlight.contextAfter, highlight.color);
     }
   });
 }
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log("GlowMarkr: Received message from background script:", request);
-  if (request.action === "highlight-selection") {
-    const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      const selectedHtml = getHtmlOfSelection();
-      const selectedText = selection.toString();
+function markSelection(color) {
+  const selection = window.getSelection();
+  if (selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
+    const selectedHtml = getHtmlOfSelection();
+    const selectedText = selection.toString();
 
-      let container = range.commonAncestorContainer;
-      if (container.nodeType !== Node.ELEMENT_NODE) {
-        container = container.parentElement;
-      }
-      const highlightSpan = container.closest('.glowmarkr-highlight');
+    if (selectedHtml && selectedText) {
+      const { contextBefore, contextAfter } = getContext(range);
+      const url = window.location.href;
+      const highlightId = Date.now().toString();
 
-      if (highlightSpan) {
-        // This is an unmark action
-        const highlightId = highlightSpan.dataset.glowmarkrId;
-        const url = window.location.href;
+      const newHighlight = {
+        id: highlightId,
+        html: selectedHtml,
+        text: selectedText,
+        contextBefore,
+        contextAfter,
+        color: color,
+      };
 
-        chrome.storage.local.get([url], (result) => {
-          let highlights = result[url] || [];
-          highlights = highlights.filter(h => h.id !== highlightId);
-
-          if (highlights.length === 0) {
-            chrome.storage.local.remove(url, () => {
-              const parent = highlightSpan.parentNode;
-              parent.replaceChild(document.createRange().createContextualFragment(highlightSpan.innerHTML), highlightSpan);
-              parent.normalize();
-              console.log("GlowMarkr: Last highlight removed, cleaning up storage for this URL.");
-            });
-          } else {
-            chrome.storage.local.set({ [url]: highlights }, () => {
-              const parent = highlightSpan.parentNode;
-              parent.replaceChild(document.createRange().createContextualFragment(highlightSpan.innerHTML), highlightSpan);
-              parent.normalize();
-              console.log("GlowMarkr: Highlight removed.");
-            });
+      chrome.storage.local.get([url], (result) => {
+        const highlights = result[url] || [];
+        highlights.push(newHighlight);
+        chrome.storage.local.set({ [url]: highlights }, () => {
+          let parentElement = range.commonAncestorContainer;
+          if (parentElement.nodeType !== Node.ELEMENT_NODE) {
+              parentElement = parentElement.parentElement;
           }
+          const computedStyle = window.getComputedStyle(parentElement);
+          const backgroundColor = computedStyle.backgroundColor;
+          const brightness = getBrightness(backgroundColor);
+
+          const span = document.createElement("span");
+          span.className = `glowmarkr-highlight glowmarkr-${color}`;
+          span.dataset.glowmarkrId = highlightId;
+
+          if (brightness === 'dark') {
+              span.style.color = "black";
+          }
+
+          span.appendChild(range.extractContents());
+          range.insertNode(span);
+          console.log("GlowMarkr: Highlight added.");
         });
-
-      } else if (selectedHtml && selectedText) {
-        // This is a mark action
-        const { contextBefore, contextAfter } = getContext(range);
-        const url = window.location.href;
-        const highlightId = Date.now().toString();
-
-        const newHighlight = {
-          id: highlightId,
-          html: selectedHtml,
-          text: selectedText,
-          contextBefore,
-          contextAfter,
-        };
-
-        chrome.storage.local.get([url], (result) => {
-          const highlights = result[url] || [];
-          highlights.push(newHighlight);
-          chrome.storage.local.set({ [url]: highlights }, () => {
-            let parentElement = range.commonAncestorContainer;
-            if (parentElement.nodeType !== Node.ELEMENT_NODE) {
-                parentElement = parentElement.parentElement;
-            }
-            const computedStyle = window.getComputedStyle(parentElement);
-            const backgroundColor = computedStyle.backgroundColor;
-            const brightness = getBrightness(backgroundColor);
-
-            const span = document.createElement("span");
-            span.style.backgroundColor = "yellow";
-            span.className = "glowmarkr-highlight";
-            span.dataset.glowmarkrId = highlightId;
-
-            if (brightness === 'dark') {
-                span.style.color = "black";
-            }
-
-            span.appendChild(range.extractContents());
-            range.insertNode(span);
-            console.log("GlowMarkr: Highlight added.");
-          });
-        });
-      }
+      });
     }
   }
-  return true;
+}
+
+function unmarkSelection() {
+  const selection = window.getSelection();
+  if (selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
+    let container = range.commonAncestorContainer;
+    if (container.nodeType !== Node.ELEMENT_NODE) {
+      container = container.parentElement;
+    }
+    const highlightSpan = container.closest('.glowmarkr-highlight');
+
+    if (highlightSpan) {
+      const highlightId = highlightSpan.dataset.glowmarkrId;
+      const url = window.location.href;
+
+      chrome.storage.local.get([url], (result) => {
+        let highlights = result[url] || [];
+        highlights = highlights.filter(h => h.id !== highlightId);
+
+        const callback = () => {
+          const parent = highlightSpan.parentNode;
+          parent.replaceChild(document.createRange().createContextualFragment(highlightSpan.innerHTML), highlightSpan);
+          parent.normalize();
+          console.log("GlowMarkr: Highlight removed.");
+        };
+
+        if (highlights.length === 0) {
+          chrome.storage.local.remove(url, callback);
+        } else {
+          chrome.storage.local.set({ [url]: highlights }, callback);
+        }
+      });
+    }
+  }
+}
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log("GlowMarkr: Received message from background script:", request);
+  if (request.action === "mark") {
+    markSelection(request.color);
+  } else if (request.action === "unmark") {
+    unmarkSelection();
+  }
 });
 
 let debounceTimer;
