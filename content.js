@@ -1,14 +1,22 @@
 // Add styles for the highlights
+const COLORS = {
+  yellow: '#fffb87',
+  green: '#a1ffb3',
+  pink: '#ffb3f5',
+  cyan: '#abfffb',
+};
+
 const style = document.createElement('style');
+const colorStyles = Object.entries(COLORS)
+  .map(([name, color]) => `.glowmarkr-${name} { background-color: ${color}; }`)
+  .join('\n');
+
 style.textContent = `
   .glowmarkr-highlight {
     padding: 2px 0;
     border-radius: 3px;
   }
-  .glowmarkr-yellow { background-color: #fffb87; }
-  .glowmarkr-green { background-color: #a1ffb3; }
-  .glowmarkr-pink { background-color: #ffb3f5; }
-  .glowmarkr-cyan { background-color: #abfffb; }
+  ${colorStyles}
 `;
 document.head.appendChild(style);
 

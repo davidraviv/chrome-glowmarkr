@@ -6,7 +6,7 @@ This project is a Chrome extension called **GlowMarkr**. It allows users to high
 
 The extension is built with plain JavaScript and utilizes Chrome's extension APIs. The core functionality is split between two main scripts:
 
-*   `background.js`: This script runs in the background and manages the context menu. It dynamically creates and updates context menu items based on user interaction, showing either "Mark" options (with color emojis) or an "Unmark" option.
+*   `background.js`: This script runs in the background and manages the context menu. It dynamically creates and updates context menu items based on user interaction, showing either "Mark" options (with color emojis) or an "Unmark" option. The menu's visibility is controlled by a function that receives the highlight state from `content.js`, which avoids maintaining a global state.
 *   `content.js`: This script is injected into every webpage the user visits. It has three primary responsibilities:
     1.  It listens for the `contextmenu` event (right-click) to determine if the user is interacting with an existing highlight. It then communicates this information to `background.js` to update the context menu's visibility.
     2.  It listens for messages from `background.js` to perform marking or unmarking actions.
