@@ -75,6 +75,19 @@ A Chrome extension that lets the user highlight selected text on any webpage, ke
 
 ---
 
+## Future Versions
+
+### Commenting on Highlights
+
+*   **Context Menu:** When right-clicking on a marked text, the context menu will show two options: "Unmark" and "Comment" (with a pencil icon).
+*   **Commenting UI:** Clicking "Comment" will open a small popup allowing the user to add a text comment.
+*   **Visual Indicator:** A pencil icon will be displayed next to the highlighted text after a comment is added.
+*   **Storage:** The comment will be saved in `chrome.storage.local` within the same data structure as the highlight.
+*   **Deletion:** Unmarking the highlight will also delete the associated comment.
+*   **Character Limit:** The comment will be limited to 500 characters.
+
+---
+
 ## Technical Notes
 
 * **Manifest**: Use `manifest_version: 3`.
@@ -93,5 +106,3 @@ A Chrome extension that lets the user highlight selected text on any webpage, ke
 ---
 
 👉 Suggestion: Start with the **MVP** (single color, exact text persistence). Once it works reliably, extend to multiple colors, popup management, and smarter reapplication.
-
-
