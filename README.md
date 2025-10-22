@@ -8,7 +8,7 @@ Ever wish you could highlight stuff on websites and have it *actually* stay ther
 
 ## 🤔 So, what's the tea?
 
-GlowMarkr lets you highlight text on any webpage, and it magically remembers your highlights next time you visit. No more losing your spot or taking a million screenshots. It's like having digital sticky notes that never fall off. 📌
+GlowMarkr lets you highlight text on any webpage, and it magically remembers your highlights next time you visit. You can even add comments to your highlights! No more losing your spot or taking a million screenshots. It's like having digital sticky notes that never fall off. 📌
 
 ## 🚀 How to use it
 
@@ -21,20 +21,29 @@ GlowMarkr lets you highlight text on any webpage, and it magically remembers you
   <img src="./media/GlowMarkr-mark.jpg" alt="GlowMarkr Mark" width="400"/>
 </div>
 
+**To add a comment:**
+
+1.  **Right-click on a highlight:** Open the context menu.
+2.  **Click "Comment 📝":** A popup will appear.
+3.  **Add your note:** Type your comment and click "Save". A pencil icon will appear next to the highlight.
+4.  **View your comment:** Hover over the pencil icon to see your note! 💬
+<div align="left">
+  <img src="./media/GlowMarkr-comment.jpg" alt="GlowMarkr Mark" width="400"/>
+</div>
 **To remove a highlight:**
 
 Changed your mind? No problem!
 
 1.  **Select the highlight:** Drag your mouse over the highlighted text you wish to remove.
 2.  **Right-click:** Open that same menu.
-3.  **Click "Unmark":** The highlight will disappear. ✨
+3.  **Click "Unmark":** The highlight and any associated comment will disappear. ✨
 <div align="left">
   <img src="./media/GlowMarkr-unmark.jpg" alt="GlowMarkr Unmark" width="400"/>
 </div>
 
 ## 🧠 It just *knows*
 
-The next time you open that page, GlowMarkr will automatically re-apply your highlights. It's perfect for:
+The next time you open that page, GlowMarkr will automatically re-apply your highlights and comment icons. It's perfect for:
 
 *   **Studying:** Keep track of key points in online articles.
 *   **Shopping:** Highlight features of products you're comparing.
@@ -43,7 +52,7 @@ The next time you open that page, GlowMarkr will automatically re-apply your hig
 ## 💖 Why you'll love it
 
 *   **Super simple:** No complicated settings or buttons.
-*   **It's persistent:** Your highlights are saved automatically and are there when you come back.
+*   **It's persistent:** Your highlights and comments are saved automatically and are there when you come back.
 *   **It's free!**
 
 ## ⚠️ A Quick Heads-Up

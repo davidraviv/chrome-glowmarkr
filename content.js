@@ -15,8 +15,46 @@ style.textContent = `
   .glowmarkr-highlight {
     padding: 2px 0;
     border-radius: 3px;
+    position: relative;
   }
   ${colorStyles}
+
+  .glowmarkr-comment-icon {
+    cursor: pointer;
+    margin-left: 5px;
+    font-style: normal;
+  }
+
+  .glowmarkr-popup-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .glowmarkr-popup {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 300px;
+  }
+
+  .glowmarkr-popup textarea {
+    width: 100%;
+    height: 100px;
+    margin-bottom: 10px;
+  }
+
+  .glowmarkr-popup button {
+    margin-right: 10px;
+  }
 `;
 document.head.appendChild(style);
 
@@ -96,7 +134,7 @@ function findSelectionNodes(textNodes, text, startIndex) {
   return { startNodeInfo, endNodeInfo };
 }
 
-function highlightHtml(id, html, text, contextBefore, contextAfter, color = 'yellow') {
+function highlightHtml(id, html, text, contextBefore, contextAfter, color = 'yellow', comment) {
   console.log("GlowMarkr: Attempting to highlight:", text);
 
   const treeWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -139,6 +177,10 @@ function highlightHtml(id, html, text, contextBefore, contextAfter, color = 'yel
         range.deleteContents();
         range.insertNode(span);
 
+        if (comment) {
+          addCommentIcon(span, comment);
+        }
+
         console.log("GlowMarkr: Match found and highlight applied!");
         return;
       }
@@ -156,7 +198,7 @@ function runHighlighting() {
     const highlights = result[url] || [];
     console.log(`GlowMarkr: Found ${highlights.length} highlights for this page.`);
     for (const highlight of highlights) {
-      highlightHtml(highlight.id, highlight.html, highlight.text, highlight.contextBefore, highlight.contextAfter, highlight.color);
+      highlightHtml(highlight.id, highlight.html, highlight.text, highlight.contextBefore, highlight.contextAfter, highlight.color, highlight.comment);
     }
   });
 }
@@ -180,6 +222,7 @@ function markSelection(color) {
         contextBefore,
         contextAfter,
         color: color,
+        comment: "",
       };
 
       chrome.storage.local.get([url], (result) => {
@@ -222,6 +265,10 @@ function unmarkSelection() {
 
         const callback = () => {
           const parent = highlightSpan.parentNode;
+          const commentIcon = parent.querySelector(`.glowmarkr-comment-icon[data-glowmarkr-id="${highlightId}"]`);
+          if (commentIcon) {
+            commentIcon.remove();
+          }
           parent.replaceChild(document.createRange().createContextualFragment(highlightSpan.innerHTML), highlightSpan);
           parent.normalize();
           console.log("GlowMarkr: Highlight removed.");
@@ -235,6 +282,76 @@ function unmarkSelection() {
       });
     }
   }
+}
+
+function addCommentIcon(highlightSpan, comment) {
+  const highlightId = highlightSpan.dataset.glowmarkrId;
+  let icon = document.querySelector(`.glowmarkr-comment-icon[data-glowmarkr-id="${highlightId}"]`);
+  if (!icon) {
+    icon = document.createElement("span");
+    icon.className = "glowmarkr-comment-icon";
+    icon.dataset.glowmarkrId = highlightId;
+    icon.textContent = "📝";
+    highlightSpan.insertAdjacentElement("afterend", icon);
+  }
+  icon.title = comment;
+}
+
+function showCommentPopup(highlightSpan) {
+  const highlightId = highlightSpan.dataset.glowmarkrId;
+  const url = window.location.href;
+
+  chrome.storage.local.get([url], (result) => {
+    const highlights = result[url] || [];
+    const highlight = highlights.find(h => h.id === highlightId);
+    const currentComment = highlight ? highlight.comment : "";
+
+    const container = document.createElement("div");
+    container.className = "glowmarkr-popup-container";
+
+    const popup = document.createElement("div");
+    popup.className = "glowmarkr-popup";
+
+    const textarea = document.createElement("textarea");
+    textarea.maxLength = 500;
+    textarea.value = currentComment;
+    textarea.placeholder = "Enter your comment (max 500 chars)";
+
+    const saveButton = document.createElement("button");
+    saveButton.textContent = "Save";
+    saveButton.onclick = () => {
+      saveComment(highlightId, textarea.value);
+      container.remove();
+    };
+
+    const cancelButton = document.createElement("button");
+    cancelButton.textContent = "Cancel";
+    cancelButton.onclick = () => container.remove();
+
+    popup.appendChild(textarea);
+    popup.appendChild(saveButton);
+    popup.appendChild(cancelButton);
+    container.appendChild(popup);
+    document.body.appendChild(container);
+  });
+}
+
+function saveComment(highlightId, comment) {
+  const url = window.location.href;
+  chrome.storage.local.get([url], (result) => {
+    const highlights = result[url] || [];
+    const highlightIndex = highlights.findIndex(h => h.id === highlightId);
+    if (highlightIndex > -1) {
+      highlights[highlightIndex].comment = comment;
+      chrome.storage.local.set({ [url]: highlights }, () => {
+        const highlightSpan = document.querySelector(`.glowmarkr-highlight[data-glowmarkr-id="${highlightId}"]`);
+        if (highlightSpan) {
+          addCommentIcon(highlightSpan, comment);
+        }
+        console.log("GlowMarkr: Comment saved.");
+      });
+    }
+  });
 }
 
 document.addEventListener('contextmenu', (event) => {
@@ -253,6 +370,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     markSelection(request.color);
   } else if (request.action === "unmark") {
     unmarkSelection();
+  } else if (request.action === "comment") {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+      let container = selection.getRangeAt(0).commonAncestorContainer;
+      if (container.nodeType !== Node.ELEMENT_NODE) {
+        container = container.parentElement;
+      }
+      const highlightSpan = container.closest('.glowmarkr-highlight');
+      if (highlightSpan) {
+        showCommentPopup(highlightSpan);
+      }
+    }
   }
 });
 

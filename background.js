@@ -23,6 +23,13 @@ function createOrUpdateMenus(isHighlighted = false) {
       contexts: ["selection"],
       visible: isHighlighted,
     });
+
+    chrome.contextMenus.create({
+      id: "comment",
+      title: "Comment 📝",
+      contexts: ["selection"],
+      visible: isHighlighted,
+    });
   });
 }
 
@@ -52,6 +59,9 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       .catch(handleSendMessageError);
   } else if (info.menuItemId === "unmark") {
     chrome.tabs.sendMessage(tab.id, { action: "unmark" })
+      .catch(handleSendMessageError);
+  } else if (info.menuItemId === "comment") {
+    chrome.tabs.sendMessage(tab.id, { action: "comment" })
       .catch(handleSendMessageError);
   }
 });
