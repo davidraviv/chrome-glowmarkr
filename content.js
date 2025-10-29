@@ -295,7 +295,8 @@ function highlightHtml(id, html, text, contextBefore, contextAfter, color = 'yel
 }
 
 function runHighlighting() {
-  observer.disconnect(); // Stop observing while we modify the DOM
+  // Disconnect the observer while we modify the DOM to avoid a feedback loop.
+  observer.disconnect();
 
   console.log("GlowMarkr: Running highlight check.");
   const url = window.location.href;
