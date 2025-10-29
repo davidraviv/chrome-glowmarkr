@@ -246,15 +246,21 @@ function highlightHtml(id, html, text, contextBefore, contextAfter, color = 'yel
   }
 
   const fullText = textNodes.map(n => n.nodeValue).join('');
-  let startIndex = 0;
-  let index;
+  
+  // Escape special characters for regex, and replace whitespace with \s+
+  const escapedText = text.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const textAsRegex = new RegExp(escapedText.replace(/\s+/g, '\\s+'), 'g');
 
-  while ((index = fullText.indexOf(text, startIndex)) > -1) {
+  let match;
+  while ((match = textAsRegex.exec(fullText)) !== null) {
+    const index = match.index;
+    const matchedText = match[0];
+
     const textBefore = fullText.substring(0, index).trim().split(/\s+/).slice(-5).join(' ');
-    const textAfter = fullText.substring(index + text.length).trim().split(/\s+/).slice(0, 5).join(' ');
+    const textAfter = fullText.substring(index + matchedText.length).trim().split(/\s+/).slice(0, 5).join(' ');
 
     if (textBefore.endsWith(contextBefore) && textAfter.startsWith(contextAfter)) {
-      const { startNodeInfo, endNodeInfo } = findSelectionNodes(textNodes, text, index);
+      const { startNodeInfo, endNodeInfo } = findSelectionNodes(textNodes, matchedText, index);
 
       if (startNodeInfo && endNodeInfo) {
         const range = document.createRange();
@@ -266,7 +272,6 @@ function highlightHtml(id, html, text, contextBefore, contextAfter, color = 'yel
           parent = parent.parentElement;
         }
         if (parent.closest('.glowmarkr-highlight')) {
-          startIndex = index + 1;
           continue;
         }
 
@@ -284,21 +289,28 @@ function highlightHtml(id, html, text, contextBefore, contextAfter, color = 'yel
         return;
       }
     }
-    startIndex = index + 1;
   }
 
-  console.log("GlowMarkr: No matches found for the highlight.");
+  console.log(`GlowMarkr: No matches found for the highlight. id=${id}`);
 }
 
 function runHighlighting() {
+  observer.disconnect(); // Stop observing while we modify the DOM
+
   console.log("GlowMarkr: Running highlight check.");
   const url = window.location.href;
   chrome.storage.local.get([url], (result) => {
     const highlights = result[url] || [];
     console.log(`GlowMarkr: Found ${highlights.length} highlights for this page.`);
     for (const highlight of highlights) {
+      if (document.querySelector(`.glowmarkr-highlight[data-glowmarkr-id="${highlight.id}"]`)) {
+        continue;
+      }
       highlightHtml(highlight.id, highlight.html, highlight.text, highlight.contextBefore, highlight.contextAfter, highlight.color, highlight.comment);
     }
+
+    // After we're done, start observing again.
+    observer.observe(document.body, { childList: true, subtree: true });
   });
 }
 
