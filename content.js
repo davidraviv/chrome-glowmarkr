@@ -7,56 +7,153 @@ const COLORS = {
 };
 
 const style = document.createElement('style');
-const colorStyles = Object.entries(COLORS)
-  .map(([name, color]) => `.glowmarkr-${name} { background-color: ${color}; }`)
-  .join('\n');
-
 style.textContent = `
-  .glowmarkr-highlight {
-    padding: 2px 0;
-    border-radius: 3px;
-    position: relative;
-  }
-  ${colorStyles}
+/* --- GlowMarkr Styles --- */
 
-  .glowmarkr-comment-icon {
-    cursor: pointer;
-    margin-left: 5px;
-    font-style: normal;
-  }
+/* Main highlight styles */
+.glowmarkr-highlight {
+  padding: 2px 0;
+  border-radius: 3px;
+  position: relative;
+}
+.glowmarkr-yellow { background-color: #fffb87; }
+.glowmarkr-green { background-color: #a1ffb3; }
+.glowmarkr-pink { background-color: #ffb3f5; }
+.glowmarkr-cyan { background-color: #abfffb; }
 
-  .glowmarkr-popup-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+.glowmarkr-comment-icon {
+  cursor: pointer;
+  margin-left: 5px;
+  font-style: normal;
+}
 
+/* --- Comment Popup --- */
+
+/* Full-screen overlay container */
+.glowmarkr-popup-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* The popup dialog itself */
+.glowmarkr-popup {
+  width: 320px;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  transition: background-color 0.3s, color 0.3s;
+  cursor: grab;
+}
+
+/* Text area for the comment */
+.glowmarkr-popup textarea {
+  width: 100%;
+  height: 120px;
+  margin-bottom: 16px;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  resize: none;
+  box-sizing: border-box; /* Ensures padding doesn't affect width */
+  transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+}
+
+.glowmarkr-popup textarea:focus {
+  outline: none;
+  border-width: 2px;
+  padding: 9px; /* Adjust padding to keep size consistent */
+}
+
+/* Container for the buttons */
+.glowmarkr-popup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* General button styles */
+.glowmarkr-popup button {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.glowmarkr-popup button:active {
+  transform: scale(0.97);
+}
+
+/* --- Light Theme (Default) --- */
+.glowmarkr-popup {
+  background-color: #ffffff;
+  color: #222222;
+  border: 1px solid #e0e0e0;
+}
+.glowmarkr-popup textarea {
+  background-color: #f9f9f9;
+  color: #222222;
+  border: 1px solid #dcdcdc;
+}
+.glowmarkr-popup textarea:focus {
+  border-color: #007aff;
+}
+.glowmarkr-popup-save {
+  background-color: #007aff;
+  color: white;
+}
+.glowmarkr-popup-save:hover {
+  background-color: #0056b3;
+}
+.glowmarkr-popup-cancel {
+  background-color: #e9e9e9;
+  color: #333333;
+}
+.glowmarkr-popup-cancel:hover {
+  background-color: #dcdcdc;
+}
+
+/* --- Dark Theme --- */
+@media (prefers-color-scheme: dark) {
   .glowmarkr-popup {
-    background-color: white;
-    padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    width: 300px;
+    background-color: #2d2d2d;
+    color: #f0f0f0;
+    border: 1px solid #444444;
   }
-
   .glowmarkr-popup textarea {
-    width: 100%;
-    height: 100px;
-    margin-bottom: 10px;
-    resize: none;
-    font-family: sans-serif;
+    background-color: #3a3a3a;
+    color: #f0f0f0;
+    border: 1px solid #555555;
   }
-
-  .glowmarkr-popup button {
-    margin-right: 10px;
+  .glowmarkr-popup textarea:focus {
+    border-color: #0a84ff;
   }
+  .glowmarkr-popup-save {
+    background-color: #0a84ff;
+    color: white;
+  }
+  .glowmarkr-popup-save:hover {
+    background-color: #0060df;
+  }
+  .glowmarkr-popup-cancel {
+    background-color: #555555;
+    color: #f0f0f0;
+  }
+  .glowmarkr-popup-cancel:hover {
+    background-color: #6a6a6a;
+  }
+}
 `;
 document.head.appendChild(style);
 
@@ -313,6 +410,7 @@ function showCommentPopup(highlightSpan) {
 
     const popup = document.createElement("div");
     popup.className = "glowmarkr-popup";
+    popup.style.position = 'absolute'; // Allow positioning with top/left
 
     const textarea = document.createElement("textarea");
     textarea.maxLength = 500;
@@ -321,6 +419,7 @@ function showCommentPopup(highlightSpan) {
 
     const saveButton = document.createElement("button");
     saveButton.textContent = "Save";
+    saveButton.className = "glowmarkr-popup-save";
     saveButton.onclick = () => {
       saveComment(highlightId, textarea.value);
       container.remove();
@@ -328,13 +427,43 @@ function showCommentPopup(highlightSpan) {
 
     const cancelButton = document.createElement("button");
     cancelButton.textContent = "Cancel";
+    cancelButton.className = "glowmarkr-popup-cancel";
     cancelButton.onclick = () => container.remove();
 
+    const actions = document.createElement("div");
+    actions.className = "glowmarkr-popup-actions";
+    actions.appendChild(cancelButton);
+    actions.appendChild(saveButton);
+
     popup.appendChild(textarea);
-    popup.appendChild(saveButton);
-    popup.appendChild(cancelButton);
+    popup.appendChild(actions);
     container.appendChild(popup);
     document.body.appendChild(container);
+
+    // Make the popup draggable
+    let isDragging = false;
+    let offsetX, offsetY;
+
+    popup.addEventListener('mousedown', (e) => {
+      if (e.target === textarea || e.target === saveButton || e.target === cancelButton) {
+        return; // Don't drag if clicking on textarea or buttons
+      }
+      isDragging = true;
+      offsetX = e.clientX - popup.getBoundingClientRect().left;
+      offsetY = e.clientY - popup.getBoundingClientRect().top;
+      popup.style.cursor = 'grabbing';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      popup.style.left = (e.clientX - offsetX) + 'px';
+      popup.style.top = (e.clientY - offsetY) + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+      popup.style.cursor = 'grab';
+    });
   });
 }
 
