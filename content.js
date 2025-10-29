@@ -50,6 +50,8 @@ style.textContent = `
     width: 100%;
     height: 100px;
     margin-bottom: 10px;
+    resize: none;
+    font-family: sans-serif;
   }
 
   .glowmarkr-popup button {

@@ -1,22 +1,26 @@
 {
-  "manifest_version": 3,
-  "name": "GlowMarkr",
-  "version": "0.4.0",
-  "description": "Persistent text highlighter with comments.",
-  "permissions": [
-    "storage",
-    "contextMenus"
-  ],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
+    "manifest_version": 3,
+    "name": "GlowMarkr",
+    "version": "0.4.0",
+    "description": "Persistent text highlighter with comments.",
+    "permissions": [
+        "storage",
+        "contextMenus"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "content.js"
+            ]
+        }
+    ],
+    "icons": {
+        "128": "icon_transparent.png"
     }
-  ],
-  "icons": {
-    "128": "icon_transparent.png"
-  }
 }
