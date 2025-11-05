@@ -5,7 +5,7 @@ const COLORS = {
   cyan: "🔵 Cyan",
 };
 
-function createOrUpdateMenus(isHighlighted = false) {
+function createContextMenu() {
   chrome.contextMenus.removeAll(() => {
     for (const [key, value] of Object.entries(COLORS)) {
       const id = `mark-${key}`;
@@ -13,7 +13,7 @@ function createOrUpdateMenus(isHighlighted = false) {
         id: id,
         title: value,
         contexts: ["selection"],
-        visible: !isHighlighted,
+        visible: true,
       });
     }
 
@@ -21,25 +21,33 @@ function createOrUpdateMenus(isHighlighted = false) {
       id: "unmark",
       title: "Unmark",
       contexts: ["selection"],
-      visible: isHighlighted,
+      visible: false,
     });
 
     chrome.contextMenus.create({
       id: "comment",
       title: "Comment 📝",
       contexts: ["selection"],
-      visible: isHighlighted,
+      visible: false,
     });
   });
 }
 
+function updateContextMenu(isHighlighted) {
+  for (const key of Object.keys(COLORS)) {
+    chrome.contextMenus.update(`mark-${key}`, { visible: !isHighlighted });
+  }
+  chrome.contextMenus.update("unmark", { visible: isHighlighted });
+  chrome.contextMenus.update("comment", { visible: isHighlighted });
+}
+
 chrome.runtime.onInstalled.addListener(() => {
-  createOrUpdateMenus();
+  createContextMenu();
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "updateContextMenu") {
-    createOrUpdateMenus(message.isHighlighted);
+    updateContextMenu(message.isHighlighted);
   }
 });
 
