@@ -43,6 +43,48 @@ style.textContent = `
   background-color: rgba(0, 0, 0, 0.4);
 }
 
+/* View-only comment popup container */
+.glowmarkr-view-popup-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: transparent;
+  pointer-events: none; /* Allow clicks to pass through the container */
+}
+
+.glowmarkr-view-popup-container .glowmarkr-popup {
+  pointer-events: auto; /* But not through the popup itself */
+}
+
+.glowmarkr-popup-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #888;
+}
+
+.glowmarkr-popup-close:hover {
+  color: #000;
+}
+
+.glowmarkr-popup-comment-display {
+  white-space: pre-wrap; /* Respects newlines and spaces */
+  word-wrap: break-word;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 15px; /* For scrollbar */
+}
+
 /* The popup dialog itself */
 .glowmarkr-popup {
   width: 320px;
@@ -406,7 +448,15 @@ function addCommentIcon(highlightSpan, comment) {
     icon.textContent = "📝";
     highlightSpan.insertAdjacentElement("afterend", icon);
   }
-  icon.title = comment;
+  
+  // Remove the old title-based hover effect
+  icon.title = '';
+
+  // Add a click listener to show the popup
+  icon.onclick = (e) => {
+    e.stopPropagation();
+    showViewCommentPopup(comment);
+  };
 }
 
 function showCommentPopup(highlightSpan) {
@@ -477,6 +527,76 @@ function showCommentPopup(highlightSpan) {
       isDragging = false;
       popup.style.cursor = 'grab';
     });
+  });
+}
+
+function showViewCommentPopup(comment) {
+  // Create a container for the popup
+  const container = document.createElement("div");
+  container.className = "glowmarkr-view-popup-container";
+
+  // Create the popup itself
+  const popup = document.createElement("div");
+  popup.className = "glowmarkr-popup";
+  popup.style.position = 'absolute'; // Needed for dragging
+
+  // Create a close button
+  const closeButton = document.createElement("button");
+  closeButton.className = "glowmarkr-popup-close";
+  closeButton.innerHTML = "&times;";
+  closeButton.onclick = () => container.remove();
+
+  // Create the comment display area
+  const commentDisplay = document.createElement("p");
+  commentDisplay.className = "glowmarkr-popup-comment-display";
+  commentDisplay.textContent = comment;
+
+  // Assemble the popup
+  popup.appendChild(closeButton);
+  popup.appendChild(commentDisplay);
+  container.appendChild(popup);
+  document.body.appendChild(container);
+
+  // Close popup on Escape key
+  const handleKeyDown = (e) => {
+    if (e.key === "Escape") {
+      container.remove();
+      document.removeEventListener('keydown', handleKeyDown);
+    }
+  };
+  document.addEventListener('keydown', handleKeyDown);
+
+  // Make the popup draggable
+  let isDragging = false;
+  let offsetX, offsetY;
+
+  popup.addEventListener('mousedown', (e) => {
+    // Prevent dragging when clicking on the close button or scrollbar
+    if (e.target === closeButton || e.target === commentDisplay && commentDisplay.scrollHeight > commentDisplay.clientHeight) {
+      return;
+    }
+    isDragging = true;
+    const rect = popup.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+    popup.style.cursor = 'grabbing';
+    // Set a fixed position when dragging starts
+    popup.style.left = rect.left + 'px';
+    popup.style.top = rect.top + 'px';
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    e.preventDefault(); // Prevent text selection while dragging
+    popup.style.left = (e.clientX - offsetX) + 'px';
+    popup.style.top = (e.clientY - offsetY) + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      popup.style.cursor = 'grab';
+    }
   });
 }
 

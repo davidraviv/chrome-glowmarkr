@@ -26,7 +26,7 @@ GlowMarkr lets you highlight text on any webpage, and it magically remembers you
 1.  **Right-click on a highlight:** Open the context menu.
 2.  **Click "Comment 📝":** A popup will appear.
 3.  **Add your note:** Type your comment and click "Save". A pencil icon will appear next to the highlight.
-4.  **View your comment:** Hover over the pencil icon to see your note! 💬
+4.  **View your comment:** Click on the pencil icon to see your note! 💬
 <div align="left">
   <img src="./media/GlowMarkr-comment.jpg" alt="GlowMarkr Mark" width="400"/>
 </div>
