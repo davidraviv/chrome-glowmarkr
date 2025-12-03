@@ -288,7 +288,7 @@ function highlightHtml(id, html, text, contextBefore, contextAfter, color = 'yel
   }
 
   const fullText = textNodes.map(n => n.nodeValue).join('');
-  
+
   // Escape special characters for regex, and replace whitespace with \s+
   const escapedText = text.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
   const textAsRegex = new RegExp(escapedText.replace(/\s+/g, '\\s+'), 'g');
@@ -448,7 +448,7 @@ function addCommentIcon(highlightSpan, comment) {
     icon.textContent = "📝";
     highlightSpan.insertAdjacentElement("afterend", icon);
   }
-  
+
   // Remove the old title-based hover effect
   icon.title = '';
 
@@ -618,15 +618,88 @@ function saveComment(highlightId, comment) {
   });
 }
 
-document.addEventListener('contextmenu', (event) => {
-  const target = event.target;
-  const isHighlighted = target.matches('.glowmarkr-highlight') || target.closest('.glowmarkr-highlight');
+function updateContextMenuState() {
+  const selection = window.getSelection();
+  let isHighlighted = false;
 
-  chrome.runtime.sendMessage({
-    type: 'updateContextMenu',
-    isHighlighted: !!isHighlighted
-  });
-}, true);
+  // Check if the selection is within a highlight
+  if (selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
+    let container = range.commonAncestorContainer;
+    if (container.nodeType !== Node.ELEMENT_NODE) {
+      container = container.parentElement;
+    }
+    if (container.closest('.glowmarkr-highlight')) {
+      isHighlighted = true;
+    }
+  }
+
+  // Also check if we just clicked on a highlight (even without selection)
+  // This part is tricky with just selection API, so we might need to rely on the event target from mouseup
+}
+
+let lastIsHighlighted = null; // Track the last state to avoid unnecessary messages
+
+function handleInteraction(event) {
+  // We need a small timeout to let the selection update happen
+  setTimeout(() => {
+    const selection = window.getSelection();
+    let isHighlighted = false;
+
+    // Check if we clicked on or are inside a highlight
+    if (event.target && (event.target.matches('.glowmarkr-highlight') || event.target.closest('.glowmarkr-highlight'))) {
+      isHighlighted = true;
+    }
+    // If not directly clicking a highlight, check if the selection overlaps one (though usually right-click on selection is what matters)
+    // For this bug, the user says "select a text... highlight it... select another text".
+    // If they select another text, isHighlighted should be false.
+
+    // If there is a non-collapsed selection, we generally want to show "Mark" unless it's already highlighted.
+    // If the selection is inside a highlight, we show "Unmark".
+
+    if (selection.rangeCount > 0 && !selection.isCollapsed) {
+      const range = selection.getRangeAt(0);
+      let container = range.commonAncestorContainer;
+      if (container.nodeType !== Node.ELEMENT_NODE) {
+        container = container.parentElement;
+      }
+      if (container.closest('.glowmarkr-highlight')) {
+        isHighlighted = true;
+      } else {
+        isHighlighted = false;
+      }
+    } else if (isHighlighted) {
+      // Clicked on a highlight without selection (or collapsed selection inside)
+      // isHighlighted remains true
+    } else {
+      // No selection, not on highlight
+      // We might want to disable everything or default to "Mark" (which won't work without selection)
+      // But the background script handles "contexts: ['selection']", so the menu only shows if there is a selection.
+      // However, for "Unmark", we might want it to show even if just right-clicking the highlight?
+      // The spec says: "When right-clicking on a marked text... options: Unmark and Comment".
+      // Chrome's "contexts: ['selection']" might be too restrictive if we want to support right-click without text selection (just clicking the span).
+      // But for now, let's stick to the current behavior which seems to rely on selection or at least the context menu appearing.
+
+      // Actually, the issue is that "contexts: ['selection']" means the menu ONLY appears if text is selected.
+      // If the user right-clicks a highlight *without* selecting text, the menu might not appear at all if we only use 'selection'.
+      // But the current code uses `contexts: ["selection"]` for everything.
+      // So the user MUST have text selected for the menu to appear.
+      // If the user selects text, `isHighlighted` should be false (unless they selected inside an existing highlight).
+    }
+
+    // Optimization: Only send message if the state has changed
+    if (isHighlighted !== lastIsHighlighted) {
+      lastIsHighlighted = isHighlighted;
+      chrome.runtime.sendMessage({
+        type: 'updateContextMenu',
+        isHighlighted: !!isHighlighted
+      });
+    }
+  }, 10);
+}
+
+document.addEventListener('mouseup', handleInteraction);
+document.addEventListener('keyup', handleInteraction);
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("GlowMarkr: Received message from background script:", request);
